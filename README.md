@@ -59,6 +59,7 @@ This implementation was used to test the reproducibility of the ARC-22 model as 
 2. Kuul, R. (2026). *Explicit Domain Translation and Morphological Parsing*. Figshare. DOI: [10.6084/m9.figshare.34003749](https://doi.org/10.6084/m9.figshare.34003749)
 3. Kuul, R. (2026). *Critical Analysis and Correction Plan for the ARC-22 Model*. Figshare. DOI: [10.6084/m9.figshare.34013346](https://doi.org/10.6084/m9.figshare.34013346)
 4. Kuul, R. (2026). *Addendum to «Critical Analysis...»: Reproducibility Test Results*. Figshare. DOI: [10.6084/m9.figshare.34016907](https://doi.org/10.6084/m9.figshare.34016907)
+5. Kuul, R. (2026). ReenKuul/arc22 — ARC-22 parser, code release (2026-09-28). Figshare. DOI: [10.6084/m9.figshare.34018395](https://doi.org/10.6084/m9.figshare.34018395)
 
 ## Author
 

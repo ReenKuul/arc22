@@ -1,71 +1,145 @@
 # ARC-22
 
-ARC-22 (Algorithmic Register Compiler) — parser for the Voynich Manuscript (MS 408), based on EVA/ZL transcription.
+**ARC-22** — structural analysis tool for undeciphered scripts.
 
-## Model
+Originally proposed as a hypothesis about the Voynich Manuscript. The name **ARC-22** (Algorithmic Register Compiler) is historical: it reflects the original hypothesis that the manuscript is a register (Register), compiled from a four-slot matrix (Compiler). In the current work, ARC-22 is used as a **structural analysis tool**, not as a decipherment. The literal meaning of the name (Register, Compiler) is not confirmed. The name is retained as a project identifier; the interpretation of R and C is an open question.
 
-A token is parsed as a four-slot matrix:
+## Repository contents
 
-[Prefix] → [Gallows] → [Kernel] → [Suffix]
+| File | Description | Status |
+| --- | --- | --- |
+| `arc22.py` | Core parser + base metrics (CR, E3, E6, H₂, LZ77) | stable |
+| `scorecard.py` | Multi-metric structural analyzer (adds V, NS, CV²) | **draft** |
+| `field.py` | Generator of the "real minus one property" field (C1–C7) | **draft** |
+| `requirements.txt` | No dependencies | —   |
+| `LICENSE` | MIT | —   |
 
-- **DIGRAPHS:** ckh, cph, cfh, cth, ch, sh, th, tch, kch, pch, fch
+## arc22.py — base parser
 
-- **PREFIXES:** qo, o, d, y, cth, ch, sh
+Four-slot token model:
 
-- **GALLOWS:** k, t, p, f, T
+```
+Token = [Prefix] → [Gallows] → [Kernel] → [Suffix]
+```
 
-- **KERNELS:** sho, chor, shol, chol, shor, kai, tai, ar, or, ol, al, ed, ain, ai, a, o, e, ach, at, ckh, cth, cph, cfh, kch, tch, pch, fch, lk, ld, lt, ii, ee, y, ch, eo, i, sh, eeo, eee
+Key functions:
 
-- **SUFFIXES:** aiiin, iin, edy, dy, in, y, l, r, n, s, m, ol, am, ys, ee, eee, eo, eedy, eeedy
+- `clean_zl_line(line)` — IVTFF cleanup
+- `parse_token(token)` — four-slot parsing
+- `compliance_rate(tokens)` — CR + E3 + E6
+- `char_entropy(tokens, n)` — H_n
+- `h2_bpc(tokens)` — H₂ in bits per character
+- `lz77_ratio(tokens)` — zlib compression ratio
+- `load_corpus(path)` — read ZL3b / IVTFF-flat
+- `load_generated(path)` — same for generated corpora
+- `print_metrics(label, tokens)` — formatted output
 
-**Errors:**
-- **E3** — no kernel.
-- **E6** — kernel not in KERNELS.
+### Base results (ZL3b, real)
 
-**Metrics:**
-- **CR** — compliance rate: (total − E3 − E6) / total.
-- **H₂ (BPC)** — bigram entropy divided by mean token length.
-- **LZ77** — compression ratio via `zlib`.
+| Metric | Value |
+| --- | --- |
+| CR  | 63.96% |
+| E3  | 0.00% |
+| E6  | 36.04% |
+| H₂ (BPC) | 1.1133 |
+| LZ77 | 0.3107 |
 
-## Usage
+## scorecard.py — multi-metric analyzer (draft)
 
-python arc22.py --voynich voynich_zl3b.txt --generated generated_text.txt
+Imports `arc22.py` as-is; does not modify it. Adds three metrics on top of the base set:
 
-## Results (current implementation, version 1.0)
+- **Positional Cramér's V** — association between slot and token position
+- **Non-stationarity ratio (NS)** — drift of CR across document windows
+- **Burstiness CV²** — clustering of token occurrences
 
-| Metric | Voynich | Generated |
-|--------|---------|-----------|
-| Tokens | 33 206 | 10 809 |
-| COMPLIANT | 21 239 | 6 483 |
-| CR | 63.96% | 59.98% |
-| E3 | 0.00% | 0.00% |
-| E6 | 36.04% | 40.02% |
-| H₂ (BPC) | 1.1133 | 1.1625 |
-| LZ77 | 0.3107 | 0.3068 |
+Public API:
 
-**Reproducibility:** two independent runs produced identical numbers.
+```python
+from scorecard import scorecard, scorecard_many
 
-## Status
+report = scorecard("voynich_zl3b.txt", label="real_ZL3b")
+scorecard_many([("file1.txt", "label1"), ("file2.txt", "label2")])
+```
 
-This implementation was used to test the reproducibility of the ARC-22 model as published in the critical paper. The reported CR values (44.38% on Voynich, 50.50% on generated text) **were not reproduced** from the published specification. See the Addendum:
+**Status: draft version.** Will be refined after the four-slot paradigm is left behind.
 
-- Kuul, R. (2026). *Addendum to «Critical Analysis and Correction Plan for the ARC-22 Model»: Reproducibility Test Results*. Figshare. DOI: [10.6084/m9.figshare.34016907](https://doi.org/10.6084/m9.figshare.34016907)
+## field.py — "real minus one property" field (draft)
 
-**The model requires substantial revision and rebuilding.**
+Generates seven corpora derived from `voynich_zl3b.txt`, each obtained by removing exactly one structural property:
 
-## Related publications
+| Corpus | Removed property |
+| --- | --- |
+| C1_shuffle_tokens | token order |
+| C2_shuffle_lines | line order |
+| C3_random_suffixes | specific suffix |
+| C4_drop_prefixes | prefix slot |
+| C5_drop_gallows | gallows slot |
+| C6_random_kernels | specific kernel |
+| C7_halves | (control — copy of real) |
 
-1. Kuul, R. (2026). *Architecture and Statistical Verification of the ARC-22 Model*. Figshare. DOI: [10.6084/m9.figshare.34003689](https://doi.org/10.6084/m9.figshare.34003689)
-2. Kuul, R. (2026). *Explicit Domain Translation and Morphological Parsing*. Figshare. DOI: [10.6084/m9.figshare.34003749](https://doi.org/10.6084/m9.figshare.34003749)
-3. Kuul, R. (2026). *Critical Analysis and Correction Plan for the ARC-22 Model*. Figshare. DOI: [10.6084/m9.figshare.34013346](https://doi.org/10.6084/m9.figshare.34013346)
-4. Kuul, R. (2026). *Addendum to «Critical Analysis...»: Reproducibility Test Results*. Figshare. DOI: [10.6084/m9.figshare.34016907](https://doi.org/10.6084/m9.figshare.34016907)
-5. Kuul, R. (2026). ReenKuul/arc22 — ARC-22 parser, code release (2026-09-28). Figshare. DOI: [10.6084/m9.figshare.34018395](https://doi.org/10.6084/m9.figshare.34018395)
+`C7_halves` is a copy of the source and serves as a pipeline purity check.
 
-## Author
+**Status: draft version.** Will be refined together with `scorecard.py`.
 
-Reen Kuul — ORCID [0009-0007-3223-5946](https://orcid.org/0009-0007-3223-5946)
+### Reproducing the field
+
+Requirements:
+
+1. `voynich_zl3b.txt` — available at Hugging Face: `Ched-ai/voynich-eva`
+2. `arc22.py`, `field.py`, `scorecard.py` — this repository
+
+Steps:
+
+```bash
+python field.py            # generates field/C1...C7.txt
+python scorecard.py field/C1_shuffle_tokens.txt C1
+```
+
+Deterministic: seed = 42.
+
+## Field results (summary)
+
+| label | CR% | V   | NS  | trend | CV² |
+| --- | --- | --- | --- | --- | --- |
+| real_ZL3b | 63.96 | 0.0245 | 0.1410 | −0.70689 | 1.6467 |
+| real_Takahashi | 61.72 | 0.0226 | 0.1532 | −0.44281 | 1.6425 |
+| timm | 59.98 | 0.0410 | 0.3196 | −0.58754 | 2.0274 |
+| markov | 45.83 | 0.0112 | 0.1405 | +0.02590 | 0.8085 |
+| scg22 | 27.02 | 0.0354 | 1.4313 | −4.29729 | 1.0368 |
+| C1_shuffle_tokens | 63.96 | 0.0065 | 0.0645 | −0.14779 | 0.7978 |
+| C2_shuffle_lines | 63.96 | 0.0056 | 0.0372 | +0.04718 | 0.8163 |
+| C3_random_suffixes | 62.34 | 0.0230 | 0.1225 | −0.64702 | 1.0981 |
+| C4_drop_prefixes | 67.94 | 0.0545 | 0.1294 | −0.76885 | 1.6380 |
+| C5_drop_gallows | 64.90 | 0.0252 | 0.1435 | −0.78344 | 1.6902 |
+| C6_random_kernels | 97.78 | 0.0181 | 0.0093 | −0.09628 | 0.9001 |
+| C7_halves | 63.96 | 0.0245 | 0.1410 | −0.70689 | 1.6467 |
+
+Key observations:
+
+- **C7 == real** — pipeline purity confirmed.
+- **CR is blind to token order** (C1) and **tautological** (C6: random kernels → CR = 97.78%).
+- **V, NS, CV² capture what CR does not** (C1, C2, C3, C5).
+- Removing a slot (C4, C5) **increases** CR — a structural defect of `parse_token`.
+
+## Data sources
+
+- **Hugging Face:** `Ched-ai/voynich-eva` (ZL3b transcription)
+- **voynich.nu:** `IT2a-n.txt` (Takahashi transcription)
+
+## Publications
+
+| #   | Title | DOI |
+| --- | --- | --- |
+| 1   | Architecture and Statistical Verification of ARC-22 | 10.6084/m9.figshare.34003689 |
+| 2   | Explicit Domain Translation and Morphological Parsing | 10.6084/m9.figshare.34003749 |
+| 3   | Critical Analysis and Correction Plan for ARC-22 | 10.6084/m9.figshare.34013346 |
+| 4   | Addendum: Reproducibility Test Results | 10.6084/m9.figshare.34016907 |
+| 5   | ReenKuul/arc22 — code release (2026-09-28) | 10.6084/m9.figshare.34018395 |
+
+## ORCID
+
+[0009-0007-3223-5946](https://orcid.org/0009-0007-3223-5946)
 
 ## License
 
 MIT
-
